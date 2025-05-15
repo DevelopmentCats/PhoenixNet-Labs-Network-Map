@@ -53,11 +53,11 @@ export default function OrthogonalConnectionEdge({
     
     // Calculate safe offsets to avoid nodes
     // Regular connections use smaller offsets to stay minimal
-    const safeHorizontalOffset = Math.max(nodeWidth / 2 + nodeClearance, 50);
-    const safeVerticalOffset = Math.max(nodeHeight / 2 + nodeClearance, 35);
+    const safeHorizontalOffset = Math.max(nodeWidth / 2 + nodeClearance, 30);
+    const safeVerticalOffset = Math.max(nodeHeight / 2 + nodeClearance, 25);
     
     // Stagger connections with the same source and target
-    const edgeStaggerOffset = edgeNumber * 15; // Smaller stagger for regular connections
+    const edgeStaggerOffset = edgeNumber * 10; // Smaller stagger for regular connections
     
     // Safe horizontal offset that accounts for node width and stagger
     const horizontalOffset = safeHorizontalOffset + edgeStaggerOffset;
@@ -65,23 +65,25 @@ export default function OrthogonalConnectionEdge({
     // Path variables
     let path;
     
-    // Regular connections should be simple and minimal
+    // Use more direct routing based on positions
     if (Math.abs(sourceY - targetY) < safeVerticalOffset) {
-      // For nodes at similar heights - create a path with a compact vertical detour
-      const direction = (edgeNumber % 2 === 0) ? 1 : -1;
-      const detourOffset = (safeVerticalOffset / 2 + edgeStaggerOffset) * direction;
-      
+      // For nodes at similar heights - create a direct horizontal connection
       path = `M ${sourceX} ${sourceY}
-              H ${sourceX + horizontalOffset / 2}
-              V ${sourceY + detourOffset}
-              H ${targetX - horizontalOffset / 2}
-              V ${targetY}
               H ${targetX}`;
     }
-    else {
-      // For most regular connections, use a simple L path
+    else if (Math.abs(sourceX - targetX) < safeHorizontalOffset) {
+      // For nodes at similar x positions - create a direct vertical connection
       path = `M ${sourceX} ${sourceY}
-              H ${sourceX + horizontalOffset / 2}
+              V ${targetY}`;
+    }
+    else {
+      // For most connections, use a simple L path with minimal segments
+      const midX = goingRight 
+        ? sourceX + horizontalOffset
+        : sourceX - horizontalOffset;
+        
+      path = `M ${sourceX} ${sourceY}
+              H ${midX}
               V ${targetY}
               H ${targetX}`;
     }

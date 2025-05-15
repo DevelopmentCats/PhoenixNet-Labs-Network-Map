@@ -6,7 +6,7 @@ import { NetworkNodeData } from './NetworkNode';
 
 // Simple component for site headers with no handles
 const SiteHeaderNode = ({ data }: NodeProps<NetworkNodeData>) => {
-  const { label } = data;
+  const { label, subtitle } = data;
   
   // Title case function - capitalize first letter of each word
   const titleCase = (str: string) => {
@@ -16,21 +16,16 @@ const SiteHeaderNode = ({ data }: NodeProps<NetworkNodeData>) => {
   };
   
   return (
-    <div className="site-header-node" style={{
-      color: 'white',
-      fontWeight: 600,
-      fontSize: '20px',
-      letterSpacing: '0.5px',
-      textAlign: 'center',
-      width: '100%',
-      height: '100%',
-      padding: '0 10px',
-      fontFamily: "Arial, Helvetica, sans-serif",
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center'
-    }}>
-      {titleCase(label)}
+    <div className="site-header-node flex flex-col justify-center items-center w-full h-full">
+      <div className="text-white text-xl font-bold tracking-wide">
+        {titleCase(label)}
+      </div>
+      
+      {subtitle && (
+        <div className="text-white text-xs opacity-80 mt-1">
+          {subtitle}
+        </div>
+      )}
     </div>
   );
 };

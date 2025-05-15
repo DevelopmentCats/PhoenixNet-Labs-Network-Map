@@ -29,86 +29,63 @@ export default function OrthogonalVpnEdge({
 
   // Create a path with strictly orthogonal (right-angled) segments
   const [edgePath, labelX, labelY] = useMemo(() => {
-    // Extract a deterministic offset from the edge ID
-    let edgeNumber = 0;
-    try {
-      // Use a more stable approach for generating the edge number
-      // This ensures consistency between server and client rendering
-      const idSum = id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-      edgeNumber = (idSum % 3);
-    } catch (e) {
-      // Fallback to 0 if any error occurs
-      edgeNumber = 0;
-    }
-    
     // Calculate distances and directions
     const horizontalDistance = Math.abs(targetX - sourceX);
     const verticalDistance = Math.abs(targetY - sourceY);
-    const totalDistance = horizontalDistance + verticalDistance;
     const goingRight = targetX > sourceX;
     const goingDown = targetY > sourceY;
-    
-    // Node dimensions - approximate to ensure clearing
-    const nodeWidth = 150;
-    const nodeHeight = 70;
-    const nodeClearance = 20;
-    
-    // Calculate safe offsets to avoid nodes
-    // For VPN connections, use larger offsets to ensure they stand out
-    const safeHorizontalOffset = Math.max(nodeWidth / 2 + nodeClearance, 80);
-    const safeVerticalOffset = Math.max(nodeHeight / 2 + nodeClearance, 50);
-    
-    // Stagger connections with the same source and target
-    const edgeStaggerOffset = edgeNumber * 30;
-    
-    // Safe horizontal offset that accounts for node width and stagger
-    const horizontalOffset = safeHorizontalOffset + edgeStaggerOffset;
-    const verticalOffset = safeVerticalOffset + edgeStaggerOffset;
     
     // Path variables
     let path;
     
-    // Special case for VPN gateway connections
-    const isGatewayConnection = id.toLowerCase().includes('gateway');
+    // Need to check if this is the long connection to the far right data center
+    // This is the most reliable check - if the horizontal distance is very large (like 1000+)
+    // and we're going right from the source, it's likely the VPN Gateway to Data Center connection
+    const isLongDistanceToRight = horizontalDistance > 800 && goingRight;
     
-    // For VPN connections, we should ALWAYS use orthogonal paths with proper clearance
-    if (isGatewayConnection) {
-      // Gateway connections need special handling
-      // Use large vertical offset to ensure we go around the gateway
-      const gatewayVerticalOffset = 100 + (edgeNumber * 50);
-      const direction = edgeNumber % 2 === 0 ? 1 : -1;
+    // Need to check if this is a connection to the branch office (middle target)
+    // The branch is typically 400-700 pixels to the right of the VPN gateway
+    const isMediumDistanceToRight = horizontalDistance > 400 && horizontalDistance < 700 && goingRight;
+    
+    // If this is the very long connection to the right - this is the one to Data Center
+    if (isLongDistanceToRight) {
+      // ALWAYS route this one down and around with a big offset
+      const downwardOffset = 180; // Large offset to go well below other elements
       
+      // Modified path to approach Data Center horizontally from the side
       path = `M ${sourceX} ${sourceY}
-              H ${sourceX + horizontalOffset}
-              V ${sourceY + (direction * gatewayVerticalOffset)}
-              H ${targetX}
-              V ${targetY}`;
-    }
-    else if (Math.abs(sourceY - targetY) < safeVerticalOffset) {
-      // Nodes at similar heights - create a path with a vertical detour
-      // Use alternating directions based on edge number
-      const direction = edgeNumber % 2 === 0 ? 1 : -1;
-      const detourOffset = verticalOffset * 1.5 * direction;
-      
-      path = `M ${sourceX} ${sourceY}
-              H ${sourceX + horizontalOffset}
-              V ${sourceY + detourOffset}
-              H ${targetX - horizontalOffset}
+              H ${sourceX + 50} 
+              V ${sourceY + downwardOffset}
+              H ${targetX - 50}
               V ${targetY}
               H ${targetX}`;
+    } 
+    // If this is the medium distance connection to the right - likely to Branch Office
+    else if (isMediumDistanceToRight) {
+      // Direct straight connection to Branch Office
+      path = `M ${sourceX} ${sourceY} H ${targetX}`;
     }
+    // All other VPN connections
     else {
-      // Use middle points to create a 3-segment path
-      // This ensures we have proper clearance on both sides
-      path = `M ${sourceX} ${sourceY}
-              H ${sourceX + horizontalOffset}
-              V ${targetY}
-              H ${targetX}`;
+      // Direct horizontal when at similar heights
+      if (Math.abs(sourceY - targetY) < 30) {
+        path = `M ${sourceX} ${sourceY} H ${targetX}`;
+      } else if (Math.abs(sourceX - targetX) < 30) {
+        // Direct vertical if at similar x positions
+        path = `M ${sourceX} ${sourceY} V ${targetY}`;
+      } else {
+        // Default route with one turn
+        const turnX = sourceX + (targetX - sourceX) / 3;
+        path = `M ${sourceX} ${sourceY}
+                H ${turnX}
+                V ${targetY}
+                H ${targetX}`;
+      }
     }
     
-    // Calculate label position centered on the path
+    // Calculate label position
     const labelPosX = (sourceX + targetX) / 2;
-    const labelPosY = (sourceY + targetY) / 2 - 15 - (edgeNumber * 5);
+    const labelPosY = (sourceY + targetY) / 2 - 15;
     
     return [path, labelPosX, labelPosY];
   }, [id, sourceX, sourceY, targetX, targetY]);
