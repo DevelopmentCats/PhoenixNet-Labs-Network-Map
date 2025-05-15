@@ -46,56 +46,67 @@ export default function OrthogonalTrunkEdge({
     const goingRight = targetX > sourceX;
     const goingDown = targetY > sourceY;
     
-    // Node dimensions - approximate to ensure clearing
-    const nodeWidth = 150;
-    const nodeHeight = 70;
-    const nodeClearance = 15;
-    
-    // Calculate safe offsets to avoid nodes
-    // For Trunk connections, use moderate offsets
-    const safeHorizontalOffset = Math.max(nodeWidth / 2 + nodeClearance, 60);
-    const safeVerticalOffset = Math.max(nodeHeight / 2 + nodeClearance, 40);
-    
-    // Stagger connections with the same source and target
-    const edgeStaggerOffset = edgeNumber * 25;
-    
-    // Safe horizontal offset that accounts for node width and stagger
-    const horizontalOffset = safeHorizontalOffset + edgeStaggerOffset;
-    const verticalOffset = safeVerticalOffset + edgeStaggerOffset;
-    
     // Path variables
     let path;
     
-    // Trunk connections are often between switches at similar heights
-    if (Math.abs(sourceY - targetY) < safeVerticalOffset) {
-      // For nodes at similar heights - create a path with a vertical detour
-      // Alternate direction based on edge number
-      const direction = edgeNumber % 2 === 0 ? 1 : -1; 
-      const detourOffset = verticalOffset * direction;
+    // Get whether this is a cross-site connection
+    const isCrossSiteConnection = horizontalDistance > 300;
+    
+    if (isCrossSiteConnection) {
+      // For site-to-site trunk connections, create staggered paths to avoid overlaps
+      const verticalOffset = 20 + (edgeNumber * 40); // Different offsets for each connection
+      const midX = sourceX + (targetX - sourceX) * 0.5;
       
-      path = `M ${sourceX} ${sourceY}
-              H ${sourceX + horizontalOffset}
-              V ${sourceY + detourOffset}
-              H ${targetX - horizontalOffset}
-              V ${targetY}
-              H ${targetX}`;
+      // Alternating offset directions based on edge number
+      const offsetDirection = edgeNumber === 0 ? 0 : (edgeNumber === 1 ? 1 : -1);
+      
+      if (offsetDirection === 0) {
+        // First connection goes directly (lowest ID number)
+        path = `M ${sourceX} ${sourceY}
+                H ${midX}
+                V ${targetY}
+                H ${targetX}`;
+      } else {
+        // Create an offset path that goes up or down first to avoid overlapping
+        const offsetY = sourceY + (offsetDirection * verticalOffset);
+        
+        path = `M ${sourceX} ${sourceY}
+                V ${offsetY}
+                H ${midX}
+                V ${targetY}
+                H ${targetX}`;
+      }
     }
-    else if (horizontalDistance < safeHorizontalOffset * 2) {
-      // For nodes that are close horizontally but at different heights,
-      // create a straight vertical segment with small horizontal offset
-      const smallOffset = 30 + (edgeNumber * 15);
-      
-      path = `M ${sourceX} ${sourceY}
-              H ${sourceX + smallOffset}
-              V ${targetY}
-              H ${targetX}`;
+    else if (Math.abs(sourceY - targetY) < 30) {
+      // For nodes at very similar heights, use direct horizontal connection
+      path = `M ${sourceX} ${sourceY} H ${targetX}`;
+    } 
+    else if (Math.abs(sourceX - targetX) < 30) {
+      // For nodes at very similar x-positions, use direct vertical connection
+      path = `M ${sourceX} ${sourceY} V ${targetY}`;
     }
     else {
-      // For most connections, use a simple Z-shaped path
-      path = `M ${sourceX} ${sourceY}
-              H ${sourceX + horizontalOffset}
-              V ${targetY}
-              H ${targetX}`;
+      // For local connections, use staggered offsets to prevent overlaps
+      const offsetDirection = edgeNumber % 2 === 0 ? 1 : -1;
+      const offsetAmount = 25 + (edgeNumber * 15);
+      
+      if (horizontalDistance > verticalDistance) {
+        // If the horizontal distance is larger, move vertically first with offset
+        const midY = sourceY + (offsetDirection * offsetAmount);
+        
+        path = `M ${sourceX} ${sourceY}
+                V ${midY}
+                H ${targetX}
+                V ${targetY}`;
+      } else {
+        // If the vertical distance is larger, move horizontally first with offset
+        const midX = sourceX + (offsetDirection * offsetAmount);
+        
+        path = `M ${sourceX} ${sourceY}
+                H ${midX}
+                V ${targetY}
+                H ${targetX}`;
+      }
     }
     
     // Label position calculation

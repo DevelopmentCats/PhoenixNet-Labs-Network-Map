@@ -47,47 +47,68 @@ export default function OrthogonalSanEdge({
     const goingRight = targetX > sourceX;
     const goingDown = targetY > sourceY;
     
-    // Node dimensions - approximate to ensure clearing
-    const nodeWidth = 150;
-    const nodeHeight = 70;
-    const nodeClearance = 15;
-    
-    // Calculate safe offsets to avoid nodes
-    // For SAN connections, use different offsets than other types
-    const safeHorizontalOffset = Math.max(nodeWidth / 2 + nodeClearance, 70);
-    const safeVerticalOffset = Math.max(nodeHeight / 2 + nodeClearance, 45);
-    
-    // Stagger connections with the same source and target
-    const edgeStaggerOffset = edgeNumber * 30;
-    
-    // Safe horizontal offset that accounts for node width and stagger
-    const horizontalOffset = safeHorizontalOffset + edgeStaggerOffset;
-    
     // Path variables
     let path;
     
-    // SAN connections are often between servers and storage
-    // Route them with different patterns than other connections
-    if (Math.abs(sourceY - targetY) < safeVerticalOffset) {
-      // For nodes at similar heights - create a path with a vertical detour
-      // SAN connections should go in opposite direction than trunk
-      const direction = edgeNumber % 2 === 0 ? -1 : 1;
-      const detourOffset = (safeVerticalOffset + edgeStaggerOffset) * direction;
+    // Check if this is a cross-site connection or local connection
+    const isCrossSiteConnection = horizontalDistance > 300;
+    
+    if (isCrossSiteConnection) {
+      // For site-to-site SAN connections, create staggered paths to avoid overlaps
+      const verticalOffset = 40 + (edgeNumber * 50); // Different offsets for each connection
+      const midX = sourceX + (targetX - sourceX) * 0.5;
       
-      path = `M ${sourceX} ${sourceY}
-              H ${sourceX + horizontalOffset}
-              V ${sourceY + detourOffset}
-              H ${targetX - horizontalOffset}
-              V ${targetY}
-              H ${targetX}`;
+      // Alternating offset directions based on edge number
+      const offsetDirection = edgeNumber === 0 ? 0 : (edgeNumber === 1 ? -1 : 1);
+      
+      if (offsetDirection === 0) {
+        // First connection goes more directly
+        path = `M ${sourceX} ${sourceY}
+                H ${midX}
+                V ${targetY}
+                H ${targetX}`;
+      } else {
+        // Create an offset path that goes up or down first to avoid overlapping
+        const offsetY = sourceY + (offsetDirection * verticalOffset);
+        
+        path = `M ${sourceX} ${sourceY}
+                V ${offsetY}
+                H ${midX}
+                V ${targetY}
+                H ${targetX}`;
+      }
+    }
+    else if (Math.abs(sourceY - targetY) < 30) {
+      // For nodes at very similar heights, use direct horizontal connection
+      path = `M ${sourceX} ${sourceY} H ${targetX}`;
+    } 
+    else if (Math.abs(sourceX - targetX) < 30) {
+      // For nodes at very similar x-positions, use direct vertical connection
+      path = `M ${sourceX} ${sourceY} V ${targetY}`;
     }
     else {
-      // For most SAN connections, use a simple path
-      // Storage connections often go between nodes at different heights
-      path = `M ${sourceX} ${sourceY}
-              H ${sourceX + horizontalOffset}
-              V ${targetY}
-              H ${targetX}`;
+      // For local SAN connections, use staggered offsets to prevent overlaps
+      const offsetDirection = edgeNumber % 2 === 0 ? 1 : -1;
+      const offsetAmount = 35 + (edgeNumber * 20);
+      
+      // SAN connections typically go between servers and storage
+      if (goingDown) {
+        // For connections going downward, go down first with an offset
+        const midX = sourceX + (offsetDirection * offsetAmount);
+        
+        path = `M ${sourceX} ${sourceY}
+                H ${midX}
+                V ${targetY}
+                H ${targetX}`;
+      } else {
+        // For connections going upward, go right/left first with an offset
+        const midY = sourceY + (offsetDirection * offsetAmount);
+        
+        path = `M ${sourceX} ${sourceY}
+                V ${midY}
+                H ${targetX}
+                V ${targetY}`;
+      }
     }
     
     // Label position calculation

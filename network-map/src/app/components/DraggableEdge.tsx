@@ -7,7 +7,10 @@ import {
   getBezierPath, 
   EdgeLabelRenderer,
   useReactFlow,
-  getSimpleBezierPath
+  getSimpleBezierPath,
+  getStraightPath,
+  getSmoothStepPath,
+  Position
 } from 'reactflow';
 
 // Base component for all draggable connection types
@@ -17,8 +20,8 @@ export default function DraggableEdge({
   sourceY,
   targetX,
   targetY,
-  sourcePosition,
-  targetPosition,
+  sourcePosition = Position.Right,
+  targetPosition = Position.Left,
   selected,
   style = {},
   markerEnd,
@@ -81,14 +84,15 @@ export default function DraggableEdge({
       labelY = (sourceY + targetY) / 2;
     }
   } else {
-    // If no waypoints, use a simple bezier curve
-    [edgePath, labelX, labelY] = getSimpleBezierPath({
+    // If no waypoints, use a smooth step path for better right-angled routing
+    [edgePath, labelX, labelY] = getSmoothStepPath({
       sourceX,
       sourceY,
       sourcePosition,
       targetX,
       targetY,
       targetPosition,
+      borderRadius: 5 // Slightly rounded corners
     });
   }
 
