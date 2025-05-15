@@ -1,0 +1,153 @@
+name: Corporate Network Infrastructure
+description: Multi-site corporate network with servers, VMs, and VPN connectivity
+sites:
+  - id: main-office
+    name: Main Office
+    location: New York
+    devices:
+      - id: router-main
+        type: router
+        name: Main Router
+        model: Cisco 4331
+        ip: 10.1.1.1
+        connections:
+          - to: switch-main-core
+          - to: firewall-main
+          - to: vpn-gateway
+          
+      - id: firewall-main
+        type: firewall
+        name: Main Firewall
+        model: Palo Alto PA-3260
+        ip: 10.1.1.2
+        
+      - id: vpn-gateway
+        type: vpn
+        name: VPN Gateway
+        model: Cisco ASA 5506-X
+        ip: 10.1.1.3
+        vpn_connections:
+          - to_site: branch-office
+          - to_site: data-center
+        
+      - id: switch-main-core
+        type: switch
+        name: Main Core Switch
+        model: Cisco Catalyst 9300
+        ip: 10.1.2.1
+        connections:
+          - to: switch-main-access1
+          - to: switch-main-access2
+          
+      - id: switch-main-access1
+        type: switch
+        name: Main Access Switch 1
+        model: Cisco Catalyst 2960
+        ip: 10.1.3.1
+        
+      - id: switch-main-access2
+        type: switch
+        name: Main Access Switch 2
+        model: Cisco Catalyst 2960
+        ip: 10.1.3.2
+        
+      - id: server-main-mgmt
+        type: server
+        name: Management Server
+        ip: 10.1.4.10
+        os: Windows Server 2022
+        
+  - id: branch-office
+    name: Branch Office
+    location: Chicago
+    devices:
+      - id: router-branch
+        type: router
+        name: Branch Router
+        model: Cisco 4321
+        ip: 10.2.1.1
+        connections:
+          - to: switch-branch
+          
+      - id: switch-branch
+        type: switch
+        name: Branch Switch
+        model: Cisco Catalyst 2960
+        ip: 10.2.2.1
+        
+      - id: server-branch
+        type: server
+        name: Branch Server
+        ip: 10.2.3.10
+        os: Windows Server 2022
+        
+  - id: data-center
+    name: Data Center
+    location: Dallas
+    devices:
+      - id: router-dc
+        type: router
+        name: DC Router
+        model: Cisco 4351
+        ip: 10.3.1.1
+        connections:
+          - to: switch-dc-core
+          
+      - id: switch-dc-core
+        type: switch
+        name: DC Core Switch
+        model: Cisco Catalyst 9500
+        ip: 10.3.2.1
+        connections:
+          - to: switch-dc-storage
+          - to: switch-dc-compute
+          
+      - id: switch-dc-storage
+        type: switch
+        name: DC Storage Switch
+        model: Cisco Nexus 9300
+        ip: 10.3.3.1
+        
+      - id: switch-dc-compute
+        type: switch
+        name: DC Compute Switch
+        model: Cisco Nexus 9300
+        ip: 10.3.3.2
+        
+      - id: server-hypervisor1
+        type: hypervisor
+        name: Hypervisor 1
+        ip: 10.3.4.10
+        hypervisor_type: VMware ESXi 7.0
+        virtual_machines:
+          - name: Web Server 1
+            ip: 10.3.10.10
+            os: Ubuntu 22.04
+            
+          - name: Web Server 2
+            ip: 10.3.10.11
+            os: Ubuntu 22.04
+            
+          - name: Application Server
+            ip: 10.3.10.12
+            os: RedHat Enterprise Linux 9
+            
+      - id: server-hypervisor2
+        type: hypervisor
+        name: Hypervisor 2
+        ip: 10.3.4.11
+        hypervisor_type: VMware ESXi 7.0
+        virtual_machines:
+          - name: Database Primary
+            ip: 10.3.11.10
+            os: Oracle Linux 8
+            
+          - name: Database Secondary
+            ip: 10.3.11.11
+            os: Oracle Linux 8
+            
+      - id: nas-storage
+        type: storage
+        name: Network Storage
+        ip: 10.3.5.10
+        storage_type: NetApp FAS8700 
